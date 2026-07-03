@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1B3A5C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="鑫美學茶館">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>鑫美學茶館 · 點餐對帳</title>
+<style>
+  :root{
+    --bg:#F3EDE1;
+    --surface:#FCFAF4;
+    --surface-2:#FFFFFF;
+    --ink:#22303B;
+    --ink-soft:#6E7681;
+    --ink-faint:#A6A093;
+    --border:#E3DAC7;
+    --navy:#1B3A5C;
+    --navy-dark:#132A43;
+    --navy-tint:#E7ECF2;
+    --gold:#B0894E;
+    --gold-soft:#C7A468;
+    --gold-tint:#F2E8D5;
+    --addon:#4E6F8C;
+    --addon-tint:#E4EBF1;
+    --danger:#B23A2E;
+    --danger-tint:#F6E3E0;
+    --radius:12px;
+    --serif:"Songti TC","Noto Serif TC","Source Han Serif TC",serif;
+    --sans:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{overscroll-behavior:none;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-text-size-adjust:100%;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:14px 16px 40px;padding-top:calc(14px + env(safe-area-inset-top));}
+
+  /* ---- Header ---- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;flex-wrap:wrap;gap:12px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .stamp{
+    border:2.5px solid var(--navy);border-radius:6px;
+    color:var(--navy);font-family:var(--serif);font-weight:700;
+    line-height:1.05;text-align:center;padding:6px 10px;font-size:15px;letter-spacing:2px;
+    background:var(--surface);
+  }
+  .brand-text .t1{font-family:var(--serif);font-size:19px;font-weight:700;letter-spacing:1px;color:var(--navy);}
+  .brand-text .t2{font-size:11.5px;color:var(--gold);letter-spacing:3px;margin-top:1px;}
+  .today-badge{
+    font-size:13px;color:var(--navy);background:var(--surface);
+    border:1px solid var(--gold-soft);padding:7px 14px;border-radius:22px;font-weight:600;
+  }
+
+  /* ---- Nav ---- */
+  nav{display:flex;gap:6px;margin-bottom:20px;background:var(--surface);
+      border:1px solid var(--border);border-radius:14px;padding:5px;flex-wrap:wrap;}
+  nav button{
+    appearance:none;border:none;cursor:pointer;flex:1;min-width:96px;
+    padding:11px 14px;font-size:15px;font-weight:700;color:var(--ink-soft);
+    border-radius:10px;background:none;font-family:var(--sans);transition:all .15s ease;
+  }
+  nav button.active{color:#fff;background:var(--navy);box-shadow:0 2px 8px rgba(27,58,92,.25);}
+  .panel{display:none;}
+  .panel.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  /* ---- 點餐頁 ---- */
+  .order-layout{display:grid;grid-template-columns:1fr 360px;gap:18px;}
+  @media (max-width:860px){.order-layout{grid-template-columns:1fr;}}
+  .menu-group{margin-bottom:22px;}
+  .menu-group h2{
+    font-family:var(--serif);font-size:16px;font-weight:700;color:var(--navy);
+    margin:0 0 12px;padding-left:4px;display:flex;align-items:center;gap:9px;
+  }
+  .menu-group h2 .gnum{
+    width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;
+    font-size:13px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);
+  }
+  .menu-group h2 .gnum.g{background:var(--gold);}
+  .menu-group h2 .gnum.a{background:var(--addon);}
+  .menu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px;}
+  .menu-btn{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:15px 13px;cursor:pointer;text-align:left;
+    display:flex;flex-direction:column;gap:7px;min-height:80px;
+    transition:transform .06s ease, box-shadow .12s ease, border-color .12s ease;
+    box-shadow:0 1px 2px rgba(0,0,0,.03);
+  }
+  .menu-btn:active{transform:scale(0.97);box-shadow:0 0 0 2px var(--gold-tint);}
+  .menu-btn .name{font-size:15px;font-weight:700;line-height:1.35;color:var(--ink);}
+  .menu-btn .price{font-size:14px;color:var(--gold);font-weight:700;font-family:var(--serif);}
+  .menu-btn.item{border-left:5px solid var(--navy);}
+  .menu-btn.set{border-left:5px solid var(--gold);}
+  .menu-btn.addon{border-left:5px solid var(--addon);}
+  .empty-hint{
+    color:var(--ink-faint);font-size:14px;padding:24px;text-align:center;
+    background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);
+  }
+
+  /* ---- Cart ---- */
+  .cart{
+    background:var(--surface);border:1px solid var(--gold-soft);border-radius:16px;
+    padding:18px;position:sticky;top:14px;display:flex;flex-direction:column;
+    max-height:calc(100vh - 28px);box-shadow:0 4px 18px rgba(27,58,92,.08);
+  }
+  .cart h2{font-family:var(--serif);font-size:18px;margin:0 0 4px;font-weight:700;color:var(--navy);}
+  .cart .cart-sub{font-size:12.5px;color:var(--ink-faint);margin:0 0 14px;}
+  .cart-list{flex:1;overflow-y:auto;min-height:70px;max-height:44vh;margin-bottom:8px;-webkit-overflow-scrolling:touch;}
+  .cart-line{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 0;border-bottom:1px solid var(--border);gap:8px;
+  }
+  .cart-line .name{font-size:14.5px;font-weight:700;flex:1;}
+  .cart-line .price-each{font-size:11.5px;color:var(--ink-faint);font-weight:400;margin-top:2px;}
+  .comp-tag{
+    display:inline-block;font-size:10.5px;font-weight:700;color:var(--gold);
+    background:var(--gold-tint);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:middle;
+  }
+  .qty-ctrl{display:flex;align-items:center;gap:7px;}
+  .qty-ctrl button{
+    width:30px;height:30px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg);cursor:pointer;font-size:16px;line-height:1;
+    display:flex;align-items:center;justify-content:center;color:var(--navy);font-weight:700;
+  }
+  .qty-ctrl button:active{background:var(--navy-tint);}
+  .qty-ctrl span{min-width:20px;text-align:center;font-size:14.5px;font-weight:700;}
+  .line-subtotal{font-size:14px;font-weight:700;min-width:60px;text-align:right;}
+  .line-subtotal.free{color:var(--gold);}
+  .cart-empty{color:var(--ink-faint);font-size:13.5px;text-align:center;padding:34px 0;}
+  .cart-total{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:14px 0;border-top:2px solid var(--navy);margin-top:4px;
+  }
+  .cart-total .label{font-size:14px;color:var(--ink-soft);}
+  .cart-total .value{font-size:26px;font-weight:700;font-family:var(--serif);color:var(--navy);}
+  .submit-btn{
+    background:var(--navy);color:#fff;border:none;border-radius:var(--radius);
+    padding:15px;font-size:16px;font-weight:700;cursor:pointer;width:100%;
+    margin-top:6px;font-family:var(--sans);letter-spacing:2px;
+  }
+  .submit-btn:active{background:var(--navy-dark);}
+  .submit-btn:disabled{background:var(--border);color:var(--ink-faint);cursor:not-allowed;}
+  .clear-btn{
+    background:none;border:none;color:var(--ink-faint);font-size:12.5px;
+    cursor:pointer;text-align:center;margin-top:10px;text-decoration:underline;
+  }
+  .pay-label{font-size:12.5px;color:var(--ink-soft);margin:12px 0 6px;font-weight:600;}
+  .pay-options{display:flex;gap:8px;}
+  .pay-btn{
+    flex:1;padding:11px 4px;border:1px solid var(--border);border-radius:10px;
+    background:var(--surface-2);cursor:pointer;font-size:14px;font-weight:700;color:var(--ink-soft);
+    font-family:var(--sans);
+  }
+  .pay-btn.selected{background:var(--navy-tint);border-color:var(--navy);color:var(--navy);}
+
+  /* ---- 對帳頁 ---- */
+  .recon-controls{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+  .recon-controls input[type=date]{
+    padding:10px 14px;border:1px solid var(--border);border-radius:10px;
+    font-size:15px;font-family:var(--sans);background:var(--surface-2);color:var(--ink);
+  }
+  .export-btn{
+    background:var(--gold);color:#fff;border:none;border-radius:10px;
+    padding:11px 18px;font-size:14.5px;font-weight:700;cursor:pointer;font-family:var(--sans);
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .export-btn:active{background:#9a763f;}
+  .export-btn svg{width:17px;height:17px;}
+  .metric-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:8px;}
+  .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+  .metric-card.hl{border-color:var(--gold-soft);background:var(--gold-tint);}
+  .metric-card .label{font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;}
+  .metric-card .value{font-size:26px;font-weight:700;font-family:var(--serif);color:var(--navy);}
+  .metric-card.hl .value{color:var(--gold);}
+  .section-title{font-family:var(--serif);font-size:17px;font-weight:700;margin:24px 0 10px;color:var(--navy);
+      display:flex;align-items:center;gap:8px;}
+  .section-title::before{content:"";width:5px;height:18px;background:var(--gold);border-radius:3px;}
+  table.recon-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  table.recon-table th,table.recon-table td{padding:11px 13px;text-align:left;font-size:14px;border-bottom:1px solid var(--border);}
+  table.recon-table th{color:var(--ink-soft);font-weight:700;background:var(--navy-tint);}
+  table.recon-table td.num,table.recon-table th.num{text-align:right;}
+  table.recon-table tr:last-child td{border-bottom:none;}
+  .void-btn{
+    background:none;border:1px solid var(--gold-soft);color:var(--navy);
+    border-radius:8px;font-size:13px;padding:6px 12px;cursor:pointer;font-weight:600;
+  }
+  .void-btn:active{background:var(--gold-tint);}
+  .free-mark{color:var(--gold);font-weight:700;}
+
+  /* ---- Modal ---- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(19,27,36,0.55);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:16px;
+    backdrop-filter:blur(2px);
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--surface);border-radius:18px;padding:22px;max-width:400px;width:100%;
+    max-height:88vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.3);
+  }
+  .modal-card h3{font-family:var(--serif);font-size:19px;margin:0 0 4px;color:var(--navy);}
+  .modal-sub{font-size:13.5px;color:var(--ink-soft);margin:0 0 18px;line-height:1.5;}
+  .modal-summary{background:var(--bg);border-radius:10px;padding:12px 14px;font-size:13.5px;margin-bottom:18px;}
+  .modal-summary div{display:flex;justify-content:space-between;padding:3px 0;gap:12px;}
+  .modal-summary div span:last-child{text-align:right;font-weight:600;}
+  .modal-actions{display:flex;flex-direction:column;gap:9px;}
+  .modal-btn{
+    padding:13px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;
+    border:1px solid var(--border);background:var(--surface-2);font-family:var(--sans);
+  }
+  .modal-btn.primary{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .modal-btn.gold{background:var(--gold);color:#fff;border-color:var(--gold);}
+  .modal-btn.danger{background:var(--danger-tint);color:var(--danger);border-color:var(--danger);}
+  .modal-btn.ghost{background:none;color:var(--ink-soft);}
+  /* 招待/加入 二選一 大 icon 卡 */
+  .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;}
+  .choice-card{
+    border:1.5px solid var(--border);border-radius:14px;padding:20px 12px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;
+    background:var(--surface-2);transition:all .12s ease;
+  }
+  .choice-card:active{transform:scale(0.96);}
+  .choice-card.gold{border-color:var(--gold-soft);}
+  .choice-card.gold:active{background:var(--gold-tint);}
+  .choice-card.navy{border-color:var(--navy);}
+  .choice-card.navy:active{background:var(--navy-tint);}
+  .choice-card .cicon{width:46px;height:46px;}
+  .choice-card .clabel{font-family:var(--serif);font-size:17px;font-weight:700;}
+  .choice-card.gold .clabel{color:var(--gold);}
+  .choice-card.navy .clabel{color:var(--navy);}
+  .choice-card .cdesc{font-size:11.5px;color:var(--ink-soft);}
+  .edit-line{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:8px;}
+  .edit-line .name{font-size:14px;font-weight:700;flex:1;}
+  .edit-pay-options{display:flex;gap:8px;margin:14px 0 18px;}
+
+  /* ---- 品項設定頁 ---- */
+  .setup-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:18px;}
+  .setup-section h2{font-family:var(--serif);font-size:17px;margin:0 0 14px;display:flex;align-items:center;gap:9px;color:var(--navy);}
+  .setup-section h2 .dot{width:12px;height:12px;border-radius:4px;display:inline-block;}
+  .setup-add-form{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .setup-add-form input{
+    padding:10px 12px;border:1px solid var(--border);border-radius:9px;font-size:15px;font-family:var(--sans);
+  }
+  .setup-add-form input.name{flex:1;min-width:150px;}
+  .setup-add-form input.price{width:110px;}
+  .setup-add-form button{
+    background:var(--navy);color:#fff;border:none;border-radius:9px;padding:10px 20px;
+    font-size:15px;cursor:pointer;font-weight:700;font-family:var(--sans);
+  }
+  .setup-list{display:flex;flex-direction:column;gap:7px;}
+  .setup-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:11px 13px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;font-size:14.5px;
+  }
+  .setup-item .del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:14px;font-weight:600;}
+  .setup-item .edit{background:none;border:none;color:var(--navy);cursor:pointer;font-size:14px;margin-right:14px;font-weight:600;}
+  .setup-item .actions{display:flex;align-items:center;}
+  .modal-field{margin-bottom:14px;}
+  .modal-field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;}
+  .modal-field input{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:9px;font-size:15px;font-family:var(--sans);}
+  .msg{
+    position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
+    background:var(--navy);color:#fff;padding:12px 24px;border-radius:26px;
+    font-size:14px;opacity:0;pointer-events:none;transition:opacity .25s ease;z-index:120;font-weight:600;
+    box-shadow:0 6px 20px rgba(0,0,0,.25);
+  }
+  .msg.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="stamp">鑫美學<br>茶　館</div>
+      <div class="brand-text">
+        <div class="t1">點餐對帳系統</div>
+        <div class="t2">新莊中港店</div>
+      </div>
+    </div>
+    <span class="today-badge" id="todayBadge"></span>
+  </header>
+
+  <nav>
+    <button class="tab-btn active" data-tab="order">點餐</button>
+    <button class="tab-btn" data-tab="recon">對帳紀錄</button>
+    <button class="tab-btn" data-tab="setup">品項設定</button>
+  </nav>
+
+  <!-- 點餐頁 -->
+  <section class="panel active" id="panel-order">
+    <div class="order-layout">
+      <div>
+        <div class="menu-group">
+          <h2><span class="gnum">壹</span>單點</h2>
+          <div class="menu-grid" id="grid-items"></div>
+        </div>
+        <div class="menu-group">
+          <h2><span class="gnum g">貳</span>套餐</h2>
+          <div class="menu-grid" id="grid-sets"></div>
+        </div>
+        <div class="menu-group">
+          <h2><span class="gnum a">參</span>加購</h2>
+          <div class="menu-grid" id="grid-addons"></div>
+        </div>
+      </div>
+      <div class="cart">
+        <h2>目前訂單</h2>
+        <p class="cart-sub" id="cartCount">尚未點餐</p>
+        <div class="cart-list" id="cartList">
+          <div class="cart-empty">點選左側品項加入訂單</div>
+        </div>
+        <div class="cart-total">
+          <span class="label">總計</span>
+          <span class="value" id="cartTotal">$0</span>
+        </div>
+        <div class="pay-label">付款方式</div>
+        <div class="pay-options" id="payOptions">
+          <button class="pay-btn" data-pay="現金">現金</button>
+          <button class="pay-btn" data-pay="LinePay">LinePay</button>
+        </div>
+        <button class="submit-btn" id="submitBtn" disabled>送出訂單</button>
+        <button class="clear-btn" id="clearBtn">清空目前訂單</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 對帳頁 -->
+  <section class="panel" id="panel-recon">
+    <div class="recon-controls">
+      <input type="date" id="reconDate">
+      <button class="export-btn" id="exportBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        匯出當日彙總 (CSV)
+      </button>
+      <span id="reconLoading" style="font-size:13px;color:var(--ink-faint);"></span>
+    </div>
+    <div class="metric-row">
+      <div class="metric-card hl"><div class="label">當日總營收</div><div class="value" id="metricRevenue">$0</div></div>
+      <div class="metric-card"><div class="label">訂單筆數</div><div class="value" id="metricCount">0</div></div>
+      <div class="metric-card"><div class="label">平均客單價</div><div class="value" id="metricAvg">$0</div></div>
+      <div class="metric-card"><div class="label">招待價值</div><div class="value" id="metricComp">$0</div></div>
+    </div>
+    <div class="section-title">品項銷售統計</div>
+    <div id="reconTableWrap"></div>
+    <div class="section-title">付款方式分計</div>
+    <div id="payTableWrap"></div>
+    <div class="section-title">訂單明細</div>
+    <div id="orderListWrap"></div>
+  </section>
+
+  <!-- 品項設定頁 -->
+  <section class="panel" id="panel-setup">
+    <div class="setup-section">
+      <h2><span class="dot" style="background:var(--navy);"></span>單點品項</h2>
+      <div class="setup-add-form">
+        <input type="text" class="name" id="itemNameInput" placeholder="品項名稱，例如：花蜜香紅茶">
+        <input type="number" class="price" id="itemPriceInput" placeholder="售價" min="0">
+        <button data-add="items">新增</button>
+      </div>
+      <div class="setup-list" id="list-items"></div>
+    </div>
+    <div class="setup-section">
+      <h2><span class="dot" style="background:var(--gold);"></span>套餐</h2>
+      <div class="setup-add-form">
+        <input type="text" class="name" id="setNameInput" placeholder="套餐名稱，例如：知己茶敘">
+        <input type="number" class="price" id="setPriceInput" placeholder="售價" min="0">
+        <button data-add="sets">新增</button>
+      </div>
+      <div class="setup-list" id="list-sets"></div>
+    </div>
+    <div class="setup-section">
+      <h2><span class="dot" style="background:var(--addon);"></span>加購</h2>
+      <div class="setup-add-form">
+        <input type="text" class="name" id="addonNameInput" placeholder="加購名稱，例如：午茶限定–瑪德蓮">
+        <input type="number" class="price" id="addonPriceInput" placeholder="售價" min="0">
+        <button data-add="addons">新增</button>
+      </div>
+      <div class="setup-list" id="list-addons"></div>
+    </div>
+    <div style="text-align:center;margin-top:6px;">
+      <button id="resetMenuBtn" style="background:none;border:none;color:var(--ink-faint);font-size:12.5px;text-decoration:underline;cursor:pointer;">還原成預設菜單</button>
+    </div>
+  </section>
+</div>
+<div class="msg" id="msg"></div>
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card" id="modalCard"></div>
+</div>
+
+<script>
+/* ============ 預設菜單 ============ */
+const DEFAULT_MENU = {
+  items: [
+    { id:'d_hongcha',  name:'花蜜香紅茶',   price:180 },
+    { id:'d_wulong',   name:'清香綠烏龍茶', price:180 },
+    { id:'d_opera',    name:'巧克力歐貝拉', price:90  },
+    { id:'d_cheese',   name:'乳酪磚',       price:60  },
+    { id:'d_madeleine',name:'瑪德蓮',       price:40  }
+  ],
+  sets: [
+    { id:'s_fs_cheese', name:'浮生半日閒(1壺茶+乳酪磚)',     price:220 },
+    { id:'s_fs_opera',  name:'浮生半日閒(1壺茶+巧克力歐貝拉)', price:250 },
+    { id:'s_zhiji',     name:'知己茶敘(2壺茶+2甜點)',         price:420 },
+    { id:'s_linggan',   name:'靈感共享(4壺茶+4甜點)',         price:799 }
+  ],
+  addons: [
+    { id:'a_madeleine', name:'午茶限定–瑪德蓮', price:20 }
+  ]
+};
+
+let menu = { items: [], sets: [], addons: [] };
+let cart = [];
+let selectedPayment = null;
+let lastReconDate = null, lastReconOrders = [], lastReconRows = [];
+
+/* ============ 工具 ============ */
+function pad(n){return String(n).padStart(2,'0');}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function nowTimeStr(){
+  const d = new Date();
+  return pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function fmtMoney(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+function escapeHtml(s){
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+function showMsg(text){
+  const el = document.getElementById('msg');
+  el.textContent = text; el.classList.add('show');
+  clearTimeout(showMsg._t);
+  showMsg._t = setTimeout(()=>el.classList.remove('show'), 1700);
+}
+
+/* ============ 離線儲存 (localStorage) ============ */
+function loadMenu(){
+  try{
+    const raw = localStorage.getItem('menu');
+    if(raw){ menu = JSON.parse(raw); }
+    else { menu = JSON.parse(JSON.stringify(DEFAULT_MENU)); saveMenu(); }
+  }catch(e){ menu = JSON.parse(JSON.stringify(DEFAULT_MENU)); }
+}
+function saveMenu(){
+  try{ localStorage.setItem('menu', JSON.stringify(menu)); }
+  catch(e){ showMsg('儲存失敗，請重試'); }
+}
+function loadOrders(dateStr){
+  try{
+    const raw = localStorage.getItem('orders:'+dateStr);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveOrders(dateStr, orders){
+  try{ localStorage.setItem('orders:'+dateStr, JSON.stringify(orders)); }
+  catch(e){ showMsg('儲存訂單失敗，請重試'); }
+}
+
+/* ============ 分頁切換 ============ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'recon') renderRecon();
+  });
+});
+
+/* ============ 點餐頁 ============ */
+function renderMenuGrids(){
+  function fill(container, list, type, cls){
+    container.innerHTML = '';
+    if(list.length === 0){
+      container.innerHTML = '<div class="empty-hint">尚未設定，請至「品項設定」新增</div>';
+      return;
+    }
+    list.forEach(it=>{
+      const b = document.createElement('button');
+      b.className = 'menu-btn ' + cls;
+      b.innerHTML = '<span class="name">'+escapeHtml(it.name)+'</span><span class="price">'+fmtMoney(it.price)+'</span>';
+      // 加購直接加入訂單，不詢問招待；單點/套餐才跳二選一
+      if(type === 'addons'){
+        b.addEventListener('click', ()=>{ addToCart(type, it, false); showMsg('已加入　'+it.name); });
+      }else{
+        b.addEventListener('click', ()=>openAddChoice(type, it));
+      }
+      container.appendChild(b);
+    });
+  }
+  fill(document.getElementById('grid-items'),  menu.items,  'items',  'item');
+  fill(document.getElementById('grid-sets'),   menu.sets,   'sets',   'set');
+  fill(document.getElementById('grid-addons'), menu.addons, 'addons', 'addon');
+}
+
+/* --- 需求3：點品項先跳「招待 or 加入訂單」二選一 --- */
+function openAddChoice(type, it){
+  modalCard.innerHTML = `
+    <h3>${escapeHtml(it.name)}</h3>
+    <p class="modal-sub">單價 ${fmtMoney(it.price)}　請選擇加入方式</p>
+    <div class="choice-grid">
+      <div class="choice-card gold" id="choiceComp">
+        <svg class="cicon" viewBox="0 0 24 24" fill="none" stroke="#B0894E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+        <span class="clabel">招待</span>
+        <span class="cdesc">免費送出 · 計入招待統計</span>
+      </div>
+      <div class="choice-card navy" id="choiceAdd">
+        <svg class="cicon" viewBox="0 0 24 24" fill="none" stroke="#1B3A5C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="clabel">加入訂單</span>
+        <span class="cdesc">正常計價 ${fmtMoney(it.price)}</span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn ghost" id="choiceCancel">取消</button>
+    </div>
+  `;
+  modalOverlay.classList.add('open');
+  document.getElementById('choiceComp').addEventListener('click', ()=>{ addToCart(type, it, true);  closeModal(); showMsg('已加入（招待）'); });
+  document.getElementById('choiceAdd').addEventListener('click',  ()=>{ addToCart(type, it, false); closeModal(); });
+  document.getElementById('choiceCancel').addEventListener('click', closeModal);
+}
+
+function addToCart(type, it, comp){
+  comp = !!comp;
+  const existing = cart.find(l=>l.type===type && l.id===it.id && l.comp===comp);
+  if(existing){ existing.qty += 1; }
+  else{ cart.push({ type, id: it.id, name: it.name, price: it.price, qty: 1, comp }); }
+  renderCart();
+}
+function changeQty(idx, delta){
+  const line = cart[idx];
+  if(!line) return;
+  line.qty += delta;
+  if(line.qty <= 0) cart.splice(idx,1);
+  renderCart();
+}
+
+function renderCart(){
+  const list = document.getElementById('cartList');
+  const totalEl = document.getElementById('cartTotal');
+  const countEl = document.getElementById('cartCount');
+  const submitBtn = document.getElementById('submitBtn');
+
+  if(cart.length === 0){
+    list.innerHTML = '<div class="cart-empty">點選左側品項加入訂單</div>';
+    countEl.textContent = '尚未點餐';
+    totalEl.textContent = fmtMoney(0);
+    submitBtn.disabled = true;
+    return;
+  }
+  let total = 0, count = 0;
+  list.innerHTML = '';
+  cart.forEach((line, idx)=>{
+    const subtotal = line.comp ? 0 : line.price * line.qty;
+    total += subtotal; count += line.qty;
+    const row = document.createElement('div');
+    row.className = 'cart-line';
+    row.innerHTML = `
+      <div style="flex:1;">
+        <div class="name">${escapeHtml(line.name)}${line.comp?'<span class="comp-tag">招待</span>':''}</div>
+        <div class="price-each">${fmtMoney(line.price)} / 份</div>
+      </div>
+      <div class="qty-ctrl">
+        <button data-act="minus">－</button>
+        <span>${line.qty}</span>
+        <button data-act="plus">＋</button>
+      </div>
+      <div class="line-subtotal ${line.comp?'free':''}">${line.comp?'招待':fmtMoney(subtotal)}</div>
+    `;
+    row.querySelector('[data-act=minus]').addEventListener('click', ()=>changeQty(idx, -1));
+    row.querySelector('[data-act=plus]').addEventListener('click', ()=>changeQty(idx, 1));
+    list.appendChild(row);
+  });
+  countEl.textContent = '共 ' + count + ' 項';
+  totalEl.textContent = fmtMoney(total);
+  submitBtn.disabled = !selectedPayment;
+}
+
+document.querySelectorAll('#payOptions .pay-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    selectedPayment = btn.dataset.pay;
+    document.querySelectorAll('#payOptions .pay-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    renderCart();
+  });
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(cart.length===0) return;
+  cart = []; selectedPayment = null;
+  document.querySelectorAll('#payOptions .pay-btn').forEach(b=>b.classList.remove('selected'));
+  renderCart();
+});
+
+document.getElementById('submitBtn').addEventListener('click', ()=>{
+  if(cart.length === 0 || !selectedPayment) return;
+  const total = cart.reduce((s,l)=>s + (l.comp?0:l.price*l.qty), 0);
+  const order = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    time: nowTimeStr(),
+    lines: cart.map(l=>({type:l.type, name:l.name, price:l.price, qty:l.qty, comp:!!l.comp})),
+    total,
+    payment: selectedPayment
+  };
+  const dateStr = todayStr();
+  const orders = loadOrders(dateStr);
+  orders.push(order);
+  saveOrders(dateStr, orders);
+  cart = []; selectedPayment = null;
+  document.querySelectorAll('#payOptions .pay-btn').forEach(b=>b.classList.remove('selected'));
+  renderCart();
+  showMsg('已送出訂單　' + fmtMoney(total));
+});
+
+/* ============ 對帳頁 ============ */
+function aggregate(orders){
+  const agg = {};
+  const pay = {};
+  let compValue = 0;
+  orders.forEach(o=>{
+    o.lines.forEach(l=>{
+      const key = l.type+':'+l.name;
+      if(!agg[key]) agg[key] = { name:l.name, type:l.type, qty:0, compQty:0, subtotal:0 };
+      if(l.comp){ agg[key].compQty += l.qty; compValue += l.price*l.qty; }
+      else { agg[key].qty += l.qty; agg[key].subtotal += l.price*l.qty; }
+    });
+    const p = o.payment || '未指定';
+    if(!pay[p]) pay[p] = { count:0, amount:0 };
+    pay[p].count += 1; pay[p].amount += o.total;
+  });
+  return { rows:Object.values(agg).sort((a,b)=>b.subtotal-a.subtotal), pay, compValue };
+}
+
+function renderRecon(){
+  const dateInput = document.getElementById('reconDate');
+  const dateStr = dateInput.value || todayStr();
+  dateInput.value = dateStr;
+  const orders = loadOrders(dateStr);
+
+  const revenue = orders.reduce((s,o)=>s+o.total, 0);
+  const count = orders.length;
+  const avg = count>0 ? revenue/count : 0;
+  const { rows, pay, compValue } = aggregate(orders);
+
+  document.getElementById('metricRevenue').textContent = fmtMoney(revenue);
+  document.getElementById('metricCount').textContent = count;
+  document.getElementById('metricAvg').textContent = fmtMoney(avg);
+  document.getElementById('metricComp').textContent = fmtMoney(compValue);
+
+  lastReconDate = dateStr; lastReconOrders = orders; lastReconRows = rows;
+  const typeLabel = { items:'單點', sets:'套餐', addons:'加購' };
+
+  // 品項銷售統計
+  const tableWrap = document.getElementById('reconTableWrap');
+  if(rows.length === 0){
+    tableWrap.innerHTML = '<div class="empty-hint">這天還沒有訂單</div>';
+  }else{
+    let html = '<table class="recon-table"><thead><tr><th>品項</th><th>類型</th><th class="num">售出</th><th class="num">招待</th><th class="num">銷售小計</th></tr></thead><tbody>';
+    rows.forEach(r=>{
+      html += `<tr><td>${escapeHtml(r.name)}</td><td>${typeLabel[r.type]||r.type}</td><td class="num">${r.qty}</td><td class="num ${r.compQty?'free-mark':''}">${r.compQty||'—'}</td><td class="num">${fmtMoney(r.subtotal)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    tableWrap.innerHTML = html;
+  }
+
+  // 付款方式分計
+  const payWrap = document.getElementById('payTableWrap');
+  const payKeys = Object.keys(pay);
+  if(payKeys.length === 0){
+    payWrap.innerHTML = '<div class="empty-hint">尚無資料</div>';
+  }else{
+    let html = '<table class="recon-table"><thead><tr><th>付款方式</th><th class="num">筆數</th><th class="num">金額</th></tr></thead><tbody>';
+    payKeys.forEach(k=>{
+      html += `<tr><td>${escapeHtml(k)}</td><td class="num">${pay[k].count}</td><td class="num">${fmtMoney(pay[k].amount)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    payWrap.innerHTML = html;
+  }
+
+  // 訂單明細
+  const listWrap = document.getElementById('orderListWrap');
+  if(orders.length === 0){
+    listWrap.innerHTML = '<div class="empty-hint">這天還沒有訂單</div>';
+  }else{
+    let html = '<table class="recon-table"><thead><tr><th>時間</th><th>售出品項</th><th class="num">金額</th><th>付款</th><th></th></tr></thead><tbody>';
+    orders.slice().reverse().forEach(o=>{
+      const lineText = o.lines.map(l=>l.name+' x'+l.qty+(l.comp?'（招待）':'')).join('、');
+      html += `<tr data-id="${o.id}">
+        <td>${o.time}</td>
+        <td>${escapeHtml(lineText)}</td>
+        <td class="num">${fmtMoney(o.total)}</td>
+        <td>${escapeHtml(o.payment||'—')}</td>
+        <td><button class="void-btn" data-id="${o.id}">編輯／刪除</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    listWrap.innerHTML = html;
+    listWrap.querySelectorAll('.void-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const order = loadOrders(dateStr).find(x=>x.id === btn.dataset.id);
+        if(order) openOrderChoice(order, dateStr);
+      });
+    });
+  }
+}
+document.getElementById('reconDate').addEventListener('change', renderRecon);
+
+/* ============ 需求1：匯出 CSV ============ */
+function csvCell(v){
+  const s = String(v==null?'':v);
+  return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+// 精算招待原價（單獨函式，供 CSV 使用）
+function compDetail(orders){
+  const m = {};
+  orders.forEach(o=>o.lines.forEach(l=>{
+    if(l.comp){
+      if(!m[l.name]) m[l.name]={qty:0,value:0};
+      m[l.name].qty+=l.qty; m[l.name].value+=l.price*l.qty;
+    }
+  }));
+  return m;
+}
+
+function buildCSV2(dateStr, orders){
+  const { rows, pay, compValue } = aggregate(orders);
+  const typeLabel = { items:'單點', sets:'套餐', addons:'加購' };
+  const revenue = orders.reduce((s,o)=>s+o.total,0);
+  const count = orders.length;
+  const avg = count>0 ? Math.round(revenue/count) : 0;
+  const comp = compDetail(orders);
+  const L = [];
+  L.push(['鑫美學茶館 · 當日營業彙總']);
+  L.push(['日期', dateStr]);
+  L.push(['匯出時間', dateStr+' '+nowTimeStr()]);
+  L.push([]);
+  L.push(['── 營業總覽 ──']);
+  L.push(['當日總營收', revenue]);
+  L.push(['訂單筆數', count]);
+  L.push(['平均客單價', avg]);
+  L.push(['招待價值（原價）', compValue]);
+  L.push([]);
+  L.push(['── 品項銷售統計 ──']);
+  L.push(['品項','類型','售出數量','招待數量','銷售小計']);
+  rows.forEach(r=>L.push([r.name, typeLabel[r.type]||r.type, r.qty, r.compQty, r.subtotal]));
+  L.push([]);
+  L.push(['── 付款方式分計 ──']);
+  L.push(['付款方式','筆數','金額']);
+  Object.keys(pay).forEach(k=>L.push([k, pay[k].count, pay[k].amount]));
+  L.push([]);
+  L.push(['── 招待統計 ──']);
+  L.push(['品項','招待數量','原價價值']);
+  const ck = Object.keys(comp);
+  if(ck.length===0) L.push(['（今日無招待）']);
+  else ck.forEach(n=>L.push([n, comp[n].qty, comp[n].value]));
+  L.push([]);
+  L.push(['── 訂單明細 ──']);
+  L.push(['時間','售出品項','金額','付款方式']);
+  orders.forEach(o=>{
+    const t = o.lines.map(l=>l.name+' x'+l.qty+(l.comp?'(招待)':'')).join('、');
+    L.push([o.time, t, o.total, o.payment||'']);
+  });
+  return '﻿' + L.map(row=>row.map(csvCell).join(',')).join('\r\n');
+}
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const dateStr = document.getElementById('reconDate').value || todayStr();
+  const orders = loadOrders(dateStr);
+  if(orders.length === 0){ showMsg('這天還沒有訂單，無法匯出'); return; }
+  const csv = buildCSV2(dateStr, orders);
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '鑫美學茶館_營業彙總_'+dateStr+'.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  showMsg('已匯出 CSV，可用 Google 試算表開啟');
+});
+
+/* ============ 需求2：訂單編輯／刪除（含刪除二次確認） ============ */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalCard = document.getElementById('modalCard');
+function closeModal(){ modalOverlay.classList.remove('open'); modalCard.innerHTML=''; }
+modalOverlay.addEventListener('click', e=>{ if(e.target===modalOverlay) closeModal(); });
+
+function openOrderChoice(order, dateStr){
+  const lineText = order.lines.map(l=>l.name+' x'+l.qty+(l.comp?'（招待）':'')).join('、');
+  modalCard.innerHTML = `
+    <h3>這筆訂單要怎麼處理？</h3>
+    <p class="modal-sub">可修改內容，或整筆刪除（刪除會再次確認）。</p>
+    <div class="modal-summary">
+      <div><span>時間</span><span>${order.time}</span></div>
+      <div><span>品項</span><span>${escapeHtml(lineText)}</span></div>
+      <div><span>金額</span><span>${fmtMoney(order.total)}</span></div>
+      <div><span>付款方式</span><span>${escapeHtml(order.payment||'—')}</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="btnEdit">編輯這筆訂單</button>
+      <button class="modal-btn danger" id="btnDelete">整筆刪除</button>
+      <button class="modal-btn ghost" id="btnCancel">取消</button>
+    </div>
+  `;
+  modalOverlay.classList.add('open');
+  document.getElementById('btnEdit').addEventListener('click', ()=>openOrderEdit(order, dateStr));
+  document.getElementById('btnDelete').addEventListener('click', ()=>openOrderDeleteConfirm(order, dateStr));
+  document.getElementById('btnCancel').addEventListener('click', closeModal);
+}
+
+function openOrderDeleteConfirm(order, dateStr){
+  const lineText = order.lines.map(l=>l.name+' x'+l.qty).join('、');
+  modalCard.innerHTML = `
+    <h3>⚠️ 確定整筆刪除？</h3>
+    <p class="modal-sub">此動作無法復原，這筆訂單會從對帳紀錄中完全移除。</p>
+    <div class="modal-summary">
+      <div><span>時間</span><span>${order.time}</span></div>
+      <div><span>品項</span><span>${escapeHtml(lineText)}</span></div>
+      <div><span>金額</span><span>${fmtMoney(order.total)}</span></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn danger" id="btnConfirmDelete">確定刪除</button>
+      <button class="modal-btn ghost" id="btnBack">返回上一步</button>
+    </div>
+  `;
+  document.getElementById('btnConfirmDelete').addEventListener('click', ()=>{
+    const updated = loadOrders(dateStr).filter(x=>x.id !== order.id);
+    saveOrders(dateStr, updated);
+    closeModal(); showMsg('已刪除訂單'); renderRecon();
+  });
+  document.getElementById('btnBack').addEventListener('click', ()=>openOrderChoice(order, dateStr));
+}
+
+function openOrderEdit(order, dateStr){
+  const editLines = order.lines.map(l=>({...l, comp:!!l.comp}));
+  let editPayment = order.payment || null;
+
+  function renderEditBody(){
+    const totalNow = editLines.reduce((s,l)=>s+(l.comp?0:l.price*l.qty), 0);
+    modalCard.innerHTML = `
+      <h3>編輯訂單</h3>
+      <p class="modal-sub">可調整數量、切換招待、或修改付款方式。數量歸零會移除該項。</p>
+      <div id="editLinesWrap"></div>
+      <div class="modal-summary" style="margin-top:12px;">
+        <div><span>目前總計</span><span>${fmtMoney(totalNow)}</span></div>
+      </div>
+      <div class="pay-label">付款方式</div>
+      <div class="edit-pay-options" id="editPayOptions">
+        <button class="pay-btn" data-pay="現金">現金</button>
+        <button class="pay-btn" data-pay="LinePay">LinePay</button>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn primary" id="btnSaveEdit">儲存變更</button>
+        <button class="modal-btn ghost" id="btnCancelEdit">取消</button>
+      </div>
+    `;
+    const linesWrap = document.getElementById('editLinesWrap');
+    if(editLines.length === 0){
+      linesWrap.innerHTML = '<div class="cart-empty">所有品項已移除，儲存後這筆訂單將被刪除</div>';
+    }else{
+      editLines.forEach((l, idx)=>{
+        const row = document.createElement('div');
+        row.className = 'edit-line';
+        row.innerHTML = `
+          <div class="name">${escapeHtml(l.name)}${l.comp?'<span class="comp-tag">招待</span>':''}
+            <div class="price-each" style="font-size:11.5px;color:var(--ink-faint);">${fmtMoney(l.price)} / 份</div>
+            <button data-act="toggle" style="margin-top:4px;background:none;border:1px solid var(--gold-soft);color:var(--gold);border-radius:6px;font-size:11.5px;padding:2px 8px;cursor:pointer;">${l.comp?'取消招待':'改為招待'}</button>
+          </div>
+          <div class="qty-ctrl">
+            <button data-act="minus">－</button>
+            <span>${l.qty}</span>
+            <button data-act="plus">＋</button>
+          </div>
+        `;
+        row.querySelector('[data-act=minus]').addEventListener('click', ()=>{
+          editLines[idx].qty -= 1;
+          if(editLines[idx].qty <= 0) editLines.splice(idx,1);
+          renderEditBody();
+        });
+        row.querySelector('[data-act=plus]').addEventListener('click', ()=>{ editLines[idx].qty += 1; renderEditBody(); });
+        row.querySelector('[data-act=toggle]').addEventListener('click', ()=>{ editLines[idx].comp = !editLines[idx].comp; renderEditBody(); });
+        linesWrap.appendChild(row);
+      });
+    }
+    document.querySelectorAll('#editPayOptions .pay-btn').forEach(btn=>{
+      if(btn.dataset.pay === editPayment) btn.classList.add('selected');
+      btn.addEventListener('click', ()=>{ editPayment = btn.dataset.pay; renderEditBody(); });
+    });
+    document.getElementById('btnCancelEdit').addEventListener('click', closeModal);
+    document.getElementById('btnSaveEdit').addEventListener('click', ()=>{
+      const list = loadOrders(dateStr);
+      const idx = list.findIndex(x=>x.id === order.id);
+      if(idx === -1){ closeModal(); return; }
+      if(editLines.length === 0){
+        list.splice(idx, 1); saveOrders(dateStr, list);
+        closeModal(); showMsg('品項已全數移除，訂單已刪除');
+      }else{
+        const newTotal = editLines.reduce((s,l)=>s+(l.comp?0:l.price*l.qty), 0);
+        list[idx] = { ...list[idx], lines: editLines.map(l=>({type:l.type,name:l.name,price:l.price,qty:l.qty,comp:!!l.comp})), total:newTotal, payment:editPayment };
+        saveOrders(dateStr, list);
+        closeModal(); showMsg('訂單已更新');
+      }
+      renderRecon();
+    });
+  }
+  renderEditBody();
+}
+
+/* ============ 品項設定頁 ============ */
+function renderSetupLists(){
+  ['items','sets','addons'].forEach(type=>{
+    const wrap = document.getElementById('list-'+type);
+    wrap.innerHTML = '';
+    if(menu[type].length === 0){
+      wrap.innerHTML = '<div style="color:var(--ink-faint);font-size:13px;padding:6px 2px;">尚未新增品項</div>';
+      return;
+    }
+    menu[type].forEach(it=>{
+      const row = document.createElement('div');
+      row.className = 'setup-item';
+      row.innerHTML = `<span>${escapeHtml(it.name)}　<b style="color:var(--gold);">${fmtMoney(it.price)}</b></span><span class="actions"><button class="edit">編輯</button><button class="del">刪除</button></span>`;
+      row.querySelector('.edit').addEventListener('click', ()=>openItemEdit(type, it));
+      row.querySelector('.del').addEventListener('click', ()=>{
+        if(!confirm('確定刪除「'+it.name+'」嗎？')) return;
+        menu[type] = menu[type].filter(x=>x.id !== it.id);
+        saveMenu(); renderSetupLists(); renderMenuGrids();
+      });
+      wrap.appendChild(row);
+    });
+  });
+}
+
+function openItemEdit(type, it){
+  modalCard.innerHTML = `
+    <h3>編輯品項</h3>
+    <p class="modal-sub">修改名稱或售價後儲存。</p>
+    <div class="modal-field"><label>名稱</label><input type="text" id="editItemName" value="${escapeHtml(it.name)}"></div>
+    <div class="modal-field"><label>售價</label><input type="number" id="editItemPrice" min="0" value="${it.price}"></div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="btnSaveItem">儲存變更</button>
+      <button class="modal-btn ghost" id="btnCancelItem">取消</button>
+    </div>
+  `;
+  modalOverlay.classList.add('open');
+  document.getElementById('btnCancelItem').addEventListener('click', closeModal);
+  document.getElementById('btnSaveItem').addEventListener('click', ()=>{
+    const name = document.getElementById('editItemName').value.trim();
+    const price = parseFloat(document.getElementById('editItemPrice').value);
+    if(!name){ showMsg('請輸入名稱'); return; }
+    if(isNaN(price) || price < 0){ showMsg('請輸入正確售價'); return; }
+    const target = menu[type].find(x=>x.id === it.id);
+    if(target){ target.name = name; target.price = price; }
+    saveMenu(); closeModal(); renderSetupLists(); renderMenuGrids();
+    showMsg('已更新「'+name+'」');
+  });
+}
+
+document.querySelectorAll('[data-add]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const type = btn.dataset.add;
+    const prefix = type === 'items' ? 'item' : (type === 'sets' ? 'set' : 'addon');
+    const nameInput = document.getElementById(prefix+'NameInput');
+    const priceInput = document.getElementById(prefix+'PriceInput');
+    const name = nameInput.value.trim();
+    const price = parseFloat(priceInput.value);
+    if(!name){ showMsg('請輸入名稱'); return; }
+    if(isNaN(price) || price < 0){ showMsg('請輸入正確售價'); return; }
+    menu[type].push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,5), name, price });
+    saveMenu(); nameInput.value=''; priceInput.value='';
+    renderSetupLists(); renderMenuGrids();
+    showMsg('已新增「'+name+'」');
+  });
+});
+
+document.getElementById('resetMenuBtn').addEventListener('click', ()=>{
+  if(!confirm('確定要還原成預設菜單嗎？（會覆蓋目前的品項設定）')) return;
+  menu = JSON.parse(JSON.stringify(DEFAULT_MENU));
+  saveMenu(); renderSetupLists(); renderMenuGrids();
+  showMsg('已還原預設菜單');
+});
+
+/* ============ 啟動 ============ */
+function init(){
+  document.getElementById('todayBadge').textContent = todayStr();
+  document.getElementById('reconDate').value = todayStr();
+  loadMenu();
+  renderMenuGrids();
+  renderSetupLists();
+  renderCart();
+}
+init();
+
+/* Service Worker（離線可用） */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
