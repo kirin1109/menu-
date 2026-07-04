@@ -62,6 +62,28 @@
     font-size:13px;color:var(--navy);background:var(--surface);
     border:1px solid var(--gold-soft);padding:7px 14px;border-radius:22px;font-weight:600;
   }
+  .header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .staff-switch{
+    display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-family:var(--sans);
+    background:var(--navy);color:#fff;border:none;border-radius:22px;
+    padding:8px 14px 8px 12px;font-size:14px;font-weight:700;
+    box-shadow:0 2px 8px rgba(27,58,92,.22);
+  }
+  .staff-switch:active{background:var(--navy-dark);}
+  .staff-switch .sicon{width:18px;height:18px;}
+  .staff-switch .chev{width:15px;height:15px;opacity:.85;}
+  .staff-switch.unset{background:var(--gold);}
+  .staff-switch.unset:active{background:#9a763f;}
+  .staff-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:6px;}
+  .staff-pick{
+    padding:13px 10px;border:1.5px solid var(--border);border-radius:11px;cursor:pointer;
+    background:var(--surface-2);font-size:14.5px;font-weight:700;color:var(--ink);
+    font-family:var(--sans);text-align:center;display:flex;align-items:center;justify-content:center;gap:7px;
+    min-height:48px;
+  }
+  .staff-pick:active{transform:scale(0.96);}
+  .staff-pick.current{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .staff-pick .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none;}
 
   /* ---- Nav ---- */
   nav{display:flex;gap:6px;margin-bottom:20px;background:var(--surface);
@@ -289,7 +311,14 @@
         <div class="t2">新莊中港店</div>
       </div>
     </div>
-    <span class="today-badge" id="todayBadge"></span>
+    <div class="header-right">
+      <button class="staff-switch" id="staffSwitch">
+        <svg class="sicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span class="sname" id="currentStaffName">選擇經手人</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <span class="today-badge" id="todayBadge"></span>
+    </div>
   </header>
 
   <nav>
@@ -356,6 +385,8 @@
     <div id="reconTableWrap"></div>
     <div class="section-title">付款方式分計</div>
     <div id="payTableWrap"></div>
+    <div class="section-title">經手人收款分計</div>
+    <div id="staffTableWrap"></div>
     <div class="section-title">訂單明細</div>
     <div id="orderListWrap"></div>
   </section>
@@ -389,6 +420,14 @@
       </div>
       <div class="setup-list" id="list-addons"></div>
     </div>
+    <div class="setup-section">
+      <h2><span class="dot" style="background:var(--gold-soft);"></span>使用者（經手人）</h2>
+      <div class="setup-add-form">
+        <input type="text" class="name" id="staffNameInput" placeholder="人員名稱，例如：欣慧">
+        <button id="addStaffBtn">新增</button>
+      </div>
+      <div class="setup-list" id="list-staff"></div>
+    </div>
     <div style="text-align:center;margin-top:6px;">
       <button id="resetMenuBtn" style="background:none;border:none;color:var(--ink-faint);font-size:12.5px;text-decoration:underline;cursor:pointer;">還原成預設菜單</button>
     </div>
@@ -420,7 +459,24 @@ const DEFAULT_MENU = {
   ]
 };
 
+/* ============ 預設使用者（經手人）名單 ============ */
+const DEFAULT_STAFF = [
+  '欣慧',
+  'Polly Tsai 羽思',
+  '予昕（Iris）',
+  '吳柏宏',
+  '周珍霈Jane',
+  '麒麟王',
+  '廖根葆Bob',
+  '張聖詔',
+  '詩涵',
+  '陳世昌',
+  '陳芊汝'
+];
+
 let menu = { items: [], sets: [], addons: [] };
+let staff = [];
+let currentStaff = null;
 let cart = [];
 let selectedPayment = null;
 let lastReconDate = null, lastReconOrders = [], lastReconRows = [];
@@ -458,6 +514,25 @@ function saveMenu(){
   try{ localStorage.setItem('menu', JSON.stringify(menu)); }
   catch(e){ showMsg('儲存失敗，請重試'); }
 }
+function loadStaff(){
+  try{
+    const raw = localStorage.getItem('staff');
+    if(raw){ staff = JSON.parse(raw); }
+    else { staff = DEFAULT_STAFF.slice(); saveStaff(); }
+  }catch(e){ staff = DEFAULT_STAFF.slice(); }
+  try{ currentStaff = localStorage.getItem('currentStaff') || null; }catch(e){ currentStaff = null; }
+  if(currentStaff && staff.indexOf(currentStaff) === -1) currentStaff = null;
+}
+function saveStaff(){
+  try{ localStorage.setItem('staff', JSON.stringify(staff)); }
+  catch(e){ showMsg('儲存使用者失敗'); }
+}
+function setCurrentStaff(name){
+  currentStaff = name;
+  try{ localStorage.setItem('currentStaff', name || ''); }catch(e){}
+  renderStaffBar();
+  renderCart();
+}
 function loadOrders(dateStr){
   try{
     const raw = localStorage.getItem('orders:'+dateStr);
@@ -479,6 +554,44 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     if(btn.dataset.tab === 'recon') renderRecon();
   });
 });
+
+/* ============ 需求4：使用者（經手人）快速切換 ============ */
+function renderStaffBar(){
+  const btn = document.getElementById('staffSwitch');
+  const nameEl = document.getElementById('currentStaffName');
+  if(currentStaff){
+    nameEl.textContent = currentStaff;
+    btn.classList.remove('unset');
+  }else{
+    nameEl.textContent = '選擇經手人';
+    btn.classList.add('unset');
+  }
+}
+function openStaffPicker(){
+  let html = `
+    <h3>切換經手人</h3>
+    <p class="modal-sub">選擇目前收款／點餐的人員，之後送出的訂單會記在此人名下。</p>
+    <div class="staff-grid">`;
+  if(staff.length === 0){
+    html += '<div class="empty-hint" style="grid-column:1/-1;">尚未新增人員，請至「品項設定」新增</div>';
+  }else{
+    staff.forEach(n=>{
+      const cur = n === currentStaff;
+      html += `<button class="staff-pick ${cur?'current':''}" data-name="${escapeHtml(n)}">${cur?'<span class="dot" style="background:#fff;"></span>':'<span class="dot"></span>'}${escapeHtml(n)}</button>`;
+    });
+  }
+  html += `</div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="modal-btn ghost" id="staffPickCancel">關閉</button>
+    </div>`;
+  modalCard.innerHTML = html;
+  modalOverlay.classList.add('open');
+  modalCard.querySelectorAll('.staff-pick').forEach(b=>{
+    b.addEventListener('click', ()=>{ setCurrentStaff(b.dataset.name); closeModal(); showMsg('目前經手人：'+b.dataset.name); });
+  });
+  document.getElementById('staffPickCancel').addEventListener('click', closeModal);
+}
+document.getElementById('staffSwitch').addEventListener('click', openStaffPicker);
 
 /* ============ 點餐頁 ============ */
 function renderMenuGrids(){
@@ -586,7 +699,7 @@ function renderCart(){
   });
   countEl.textContent = '共 ' + count + ' 項';
   totalEl.textContent = fmtMoney(total);
-  submitBtn.disabled = !selectedPayment;
+  submitBtn.disabled = !selectedPayment || !currentStaff;
 }
 
 document.querySelectorAll('#payOptions .pay-btn').forEach(btn=>{
@@ -607,13 +720,15 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
 
 document.getElementById('submitBtn').addEventListener('click', ()=>{
   if(cart.length === 0 || !selectedPayment) return;
+  if(!currentStaff){ showMsg('請先選擇經手人'); openStaffPicker(); return; }
   const total = cart.reduce((s,l)=>s + (l.comp?0:l.price*l.qty), 0);
   const order = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     time: nowTimeStr(),
     lines: cart.map(l=>({type:l.type, name:l.name, price:l.price, qty:l.qty, comp:!!l.comp})),
     total,
-    payment: selectedPayment
+    payment: selectedPayment,
+    staff: currentStaff
   };
   const dateStr = todayStr();
   const orders = loadOrders(dateStr);
@@ -629,6 +744,7 @@ document.getElementById('submitBtn').addEventListener('click', ()=>{
 function aggregate(orders){
   const agg = {};
   const pay = {};
+  const byStaff = {};
   let compValue = 0;
   orders.forEach(o=>{
     o.lines.forEach(l=>{
@@ -640,8 +756,14 @@ function aggregate(orders){
     const p = o.payment || '未指定';
     if(!pay[p]) pay[p] = { count:0, amount:0 };
     pay[p].count += 1; pay[p].amount += o.total;
+    // 經手人 × 付款方式
+    const s = o.staff || '未指定';
+    if(!byStaff[s]) byStaff[s] = { count:0, total:0, methods:{} };
+    byStaff[s].count += 1; byStaff[s].total += o.total;
+    if(!byStaff[s].methods[p]) byStaff[s].methods[p] = { count:0, amount:0 };
+    byStaff[s].methods[p].count += 1; byStaff[s].methods[p].amount += o.total;
   });
-  return { rows:Object.values(agg).sort((a,b)=>b.subtotal-a.subtotal), pay, compValue };
+  return { rows:Object.values(agg).sort((a,b)=>b.subtotal-a.subtotal), pay, byStaff, compValue };
 }
 
 function renderRecon(){
@@ -653,7 +775,7 @@ function renderRecon(){
   const revenue = orders.reduce((s,o)=>s+o.total, 0);
   const count = orders.length;
   const avg = count>0 ? revenue/count : 0;
-  const { rows, pay, compValue } = aggregate(orders);
+  const { rows, pay, byStaff, compValue } = aggregate(orders);
 
   document.getElementById('metricRevenue').textContent = fmtMoney(revenue);
   document.getElementById('metricCount').textContent = count;
@@ -690,12 +812,36 @@ function renderRecon(){
     payWrap.innerHTML = html;
   }
 
+  // 經手人 × 付款方式 收款分計
+  const staffWrap = document.getElementById('staffTableWrap');
+  const staffKeys = Object.keys(byStaff);
+  if(staffKeys.length === 0){
+    staffWrap.innerHTML = '<div class="empty-hint">尚無資料</div>';
+  }else{
+    // 收集出現過的付款方式當欄位
+    const methodSet = [];
+    staffKeys.forEach(s=>Object.keys(byStaff[s].methods).forEach(m=>{ if(methodSet.indexOf(m)===-1) methodSet.push(m); }));
+    let html = '<table class="recon-table"><thead><tr><th>經手人</th>';
+    methodSet.forEach(m=>{ html += `<th class="num">${escapeHtml(m)}</th>`; });
+    html += '<th class="num">合計</th><th class="num">筆數</th></tr></thead><tbody>';
+    staffKeys.sort((a,b)=>byStaff[b].total-byStaff[a].total).forEach(s=>{
+      html += `<tr><td>${escapeHtml(s)}</td>`;
+      methodSet.forEach(m=>{
+        const cell = byStaff[s].methods[m];
+        html += `<td class="num">${cell?fmtMoney(cell.amount):'—'}</td>`;
+      });
+      html += `<td class="num"><b>${fmtMoney(byStaff[s].total)}</b></td><td class="num">${byStaff[s].count}</td></tr>`;
+    });
+    html += '</tbody></table>';
+    staffWrap.innerHTML = html;
+  }
+
   // 訂單明細
   const listWrap = document.getElementById('orderListWrap');
   if(orders.length === 0){
     listWrap.innerHTML = '<div class="empty-hint">這天還沒有訂單</div>';
   }else{
-    let html = '<table class="recon-table"><thead><tr><th>時間</th><th>售出品項</th><th class="num">金額</th><th>付款</th><th></th></tr></thead><tbody>';
+    let html = '<table class="recon-table"><thead><tr><th>時間</th><th>售出品項</th><th class="num">金額</th><th>付款</th><th>經手人</th><th></th></tr></thead><tbody>';
     orders.slice().reverse().forEach(o=>{
       const lineText = o.lines.map(l=>l.name+' x'+l.qty+(l.comp?'（招待）':'')).join('、');
       html += `<tr data-id="${o.id}">
@@ -703,6 +849,7 @@ function renderRecon(){
         <td>${escapeHtml(lineText)}</td>
         <td class="num">${fmtMoney(o.total)}</td>
         <td>${escapeHtml(o.payment||'—')}</td>
+        <td>${escapeHtml(o.staff||'—')}</td>
         <td><button class="void-btn" data-id="${o.id}">編輯／刪除</button></td>
       </tr>`;
     });
@@ -736,7 +883,7 @@ function compDetail(orders){
 }
 
 function buildCSV2(dateStr, orders){
-  const { rows, pay, compValue } = aggregate(orders);
+  const { rows, pay, byStaff, compValue } = aggregate(orders);
   const typeLabel = { items:'單點', sets:'套餐', addons:'加購' };
   const revenue = orders.reduce((s,o)=>s+o.total,0);
   const count = orders.length;
@@ -761,6 +908,16 @@ function buildCSV2(dateStr, orders){
   L.push(['付款方式','筆數','金額']);
   Object.keys(pay).forEach(k=>L.push([k, pay[k].count, pay[k].amount]));
   L.push([]);
+  // 經手人 × 付款方式（收款對帳用，含 LinePay 由誰收取）
+  const methodSet = [];
+  Object.keys(byStaff).forEach(s=>Object.keys(byStaff[s].methods).forEach(m=>{ if(methodSet.indexOf(m)===-1) methodSet.push(m); }));
+  L.push(['── 經手人收款分計 ──']);
+  L.push(['經手人', ...methodSet, '合計', '筆數']);
+  Object.keys(byStaff).sort((a,b)=>byStaff[b].total-byStaff[a].total).forEach(s=>{
+    const cells = methodSet.map(m=>byStaff[s].methods[m]?byStaff[s].methods[m].amount:0);
+    L.push([s, ...cells, byStaff[s].total, byStaff[s].count]);
+  });
+  L.push([]);
   L.push(['── 招待統計 ──']);
   L.push(['品項','招待數量','原價價值']);
   const ck = Object.keys(comp);
@@ -768,10 +925,10 @@ function buildCSV2(dateStr, orders){
   else ck.forEach(n=>L.push([n, comp[n].qty, comp[n].value]));
   L.push([]);
   L.push(['── 訂單明細 ──']);
-  L.push(['時間','售出品項','金額','付款方式']);
+  L.push(['時間','售出品項','金額','付款方式','經手人']);
   orders.forEach(o=>{
     const t = o.lines.map(l=>l.name+' x'+l.qty+(l.comp?'(招待)':'')).join('、');
-    L.push([o.time, t, o.total, o.payment||'']);
+    L.push([o.time, t, o.total, o.payment||'', o.staff||'']);
   });
   return '﻿' + L.map(row=>row.map(csvCell).join(',')).join('\r\n');
 }
@@ -848,6 +1005,7 @@ function openOrderDeleteConfirm(order, dateStr){
 function openOrderEdit(order, dateStr){
   const editLines = order.lines.map(l=>({...l, comp:!!l.comp}));
   let editPayment = order.payment || null;
+  let editStaff = order.staff || null;
 
   function renderEditBody(){
     const totalNow = editLines.reduce((s,l)=>s+(l.comp?0:l.price*l.qty), 0);
@@ -862,6 +1020,13 @@ function openOrderEdit(order, dateStr){
       <div class="edit-pay-options" id="editPayOptions">
         <button class="pay-btn" data-pay="現金">現金</button>
         <button class="pay-btn" data-pay="LinePay">LinePay</button>
+      </div>
+      <div class="pay-label">經手人</div>
+      <div class="modal-field" style="margin-bottom:16px;">
+        <select id="editStaffSelect" style="width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:9px;font-size:15px;font-family:var(--sans);background:var(--surface-2);">
+          <option value="">未指定</option>
+          ${staff.map(n=>`<option value="${escapeHtml(n)}" ${n===editStaff?'selected':''}>${escapeHtml(n)}</option>`).join('')}
+        </select>
       </div>
       <div class="modal-actions">
         <button class="modal-btn primary" id="btnSaveEdit">儲存變更</button>
@@ -900,8 +1065,12 @@ function openOrderEdit(order, dateStr){
       if(btn.dataset.pay === editPayment) btn.classList.add('selected');
       btn.addEventListener('click', ()=>{ editPayment = btn.dataset.pay; renderEditBody(); });
     });
+    const selStaff = document.getElementById('editStaffSelect');
+    if(selStaff) selStaff.addEventListener('change', ()=>{ editStaff = selStaff.value || null; });
     document.getElementById('btnCancelEdit').addEventListener('click', closeModal);
     document.getElementById('btnSaveEdit').addEventListener('click', ()=>{
+      const selEl = document.getElementById('editStaffSelect');
+      editStaff = selEl ? (selEl.value || null) : editStaff;
       const list = loadOrders(dateStr);
       const idx = list.findIndex(x=>x.id === order.id);
       if(idx === -1){ closeModal(); return; }
@@ -910,7 +1079,7 @@ function openOrderEdit(order, dateStr){
         closeModal(); showMsg('品項已全數移除，訂單已刪除');
       }else{
         const newTotal = editLines.reduce((s,l)=>s+(l.comp?0:l.price*l.qty), 0);
-        list[idx] = { ...list[idx], lines: editLines.map(l=>({type:l.type,name:l.name,price:l.price,qty:l.qty,comp:!!l.comp})), total:newTotal, payment:editPayment };
+        list[idx] = { ...list[idx], lines: editLines.map(l=>({type:l.type,name:l.name,price:l.price,qty:l.qty,comp:!!l.comp})), total:newTotal, payment:editPayment, staff:editStaff };
         saveOrders(dateStr, list);
         closeModal(); showMsg('訂單已更新');
       }
@@ -986,6 +1155,60 @@ document.querySelectorAll('[data-add]').forEach(btn=>{
   });
 });
 
+/* ---- 使用者（經手人）設定 ---- */
+function renderStaffSetup(){
+  const wrap = document.getElementById('list-staff');
+  wrap.innerHTML = '';
+  if(staff.length === 0){
+    wrap.innerHTML = '<div style="color:var(--ink-faint);font-size:13px;padding:6px 2px;">尚未新增人員</div>';
+    return;
+  }
+  staff.forEach((n, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'setup-item';
+    row.innerHTML = `<span>${escapeHtml(n)}${n===currentStaff?' <span class="comp-tag" style="color:var(--navy);background:var(--navy-tint);">目前</span>':''}</span><span class="actions"><button class="edit">改名</button><button class="del">刪除</button></span>`;
+    row.querySelector('.edit').addEventListener('click', ()=>openStaffRename(idx));
+    row.querySelector('.del').addEventListener('click', ()=>{
+      if(!confirm('確定刪除人員「'+n+'」嗎？')) return;
+      staff.splice(idx,1);
+      if(currentStaff === n) setCurrentStaff(null);
+      saveStaff(); renderStaffSetup();
+    });
+    wrap.appendChild(row);
+  });
+}
+function openStaffRename(idx){
+  const old = staff[idx];
+  modalCard.innerHTML = `
+    <h3>修改人員名稱</h3>
+    <p class="modal-sub">修改後，先前訂單已記錄的名稱不會變動。</p>
+    <div class="modal-field"><label>名稱</label><input type="text" id="editStaffName" value="${escapeHtml(old)}"></div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" id="btnSaveStaff">儲存</button>
+      <button class="modal-btn ghost" id="btnCancelStaff">取消</button>
+    </div>`;
+  modalOverlay.classList.add('open');
+  document.getElementById('btnCancelStaff').addEventListener('click', closeModal);
+  document.getElementById('btnSaveStaff').addEventListener('click', ()=>{
+    const name = document.getElementById('editStaffName').value.trim();
+    if(!name){ showMsg('請輸入名稱'); return; }
+    staff[idx] = name;
+    if(currentStaff === old) setCurrentStaff(name);
+    saveStaff(); closeModal(); renderStaffSetup();
+    showMsg('已更新為「'+name+'」');
+  });
+}
+document.getElementById('addStaffBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('staffNameInput');
+  const name = input.value.trim();
+  if(!name){ showMsg('請輸入名稱'); return; }
+  if(staff.indexOf(name) !== -1){ showMsg('已有相同名稱'); return; }
+  staff.push(name);
+  saveStaff(); input.value='';
+  renderStaffSetup();
+  showMsg('已新增人員「'+name+'」');
+});
+
 document.getElementById('resetMenuBtn').addEventListener('click', ()=>{
   if(!confirm('確定要還原成預設菜單嗎？（會覆蓋目前的品項設定）')) return;
   menu = JSON.parse(JSON.stringify(DEFAULT_MENU));
@@ -998,8 +1221,11 @@ function init(){
   document.getElementById('todayBadge').textContent = todayStr();
   document.getElementById('reconDate').value = todayStr();
   loadMenu();
+  loadStaff();
   renderMenuGrids();
   renderSetupLists();
+  renderStaffSetup();
+  renderStaffBar();
   renderCart();
 }
 init();
